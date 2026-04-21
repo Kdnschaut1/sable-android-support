@@ -1,0 +1,35 @@
+package dev.sableandroid;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
+public class SableAndroidLoader {
+
+    private static final String ANDROID_NATIVE = "/natives/sable_rapier/sable_rapier_aarch64_android.so";
+
+    public static void load(String desktopPath) {
+        if (!SableAndroid.isAndroid()) {
+            System.load(desktopPath);
+            return;
+        }
+
+        SableAndroid.LOGGER.info("[SableAndroid] Android detected - loading NDK-compiled Rapier native.");
+
+        try (InputStream stream = SableAndroidLoader.class.getResourceAsStream(ANDROID_NATIVE)) {
+            if (stream == null) {
+                throw new RuntimeException("[SableAndroid] Android native not found: " + ANDROID_NATIVE);
+            }
+            Path tempFile = Files.createTempFile("sable_rapier_android", ".so");
+            tempFile.toFile().deleteOnExit();
+            Files.copy(stream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            SableAndroid.LOGGER.info("[SableAndroid] Loading: {}", tempFile.toAbsolutePath());
+            System.load(tempFile.toAbsolutePath().toString());
+            SableAndroid.LOGGER.info("[SableAndroid] Rapier native loaded successfully!");
+        } catch (IOException e) {
+            throw new RuntimeException("[SableAndroid] Failed to load Android native", e);
+        }
+    }
+}
