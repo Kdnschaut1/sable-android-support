@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "sable_android",
+  "version": "1.2.0",
+  "name": "Sable Android Support",
+  "description": "Adds Android (PojavLauncher / Mojo) support to the Sable physics mod. Includes configurable tick throttling for mobile performance.",
+  "authors": ["Kdnschaut"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.sableandroid.SableAndroidFabric"],
+    "client": ["dev.sableandroid.SableAndroidFabricClient"]
+  },
+  "mixins": ["sable_android.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "sable": "*"
+  }
+}

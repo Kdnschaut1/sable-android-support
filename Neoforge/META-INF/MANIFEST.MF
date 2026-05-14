@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+MixinConfigs: sable_android.mixins.json
+Created-By: 21.0.10 (Ubuntu)
+

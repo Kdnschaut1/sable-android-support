@@ -1,0 +1,23 @@
+{
+  "required": false,
+  "package": "dev.sableandroid.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "mixins": [
+    "Rapier3DMixin",
+    "TickThrottleMixin$GimbalSensor",
+    "TickThrottleMixin$VelocitySensor",
+    "TickThrottleMixin$AltitudeSensor",
+    "TickThrottleMixin$Spring",
+    "TickThrottleMixin$NavTable",
+    "TickThrottleMixin$RedstoneMagnet",
+    "TickThrottleMixin$DockingConnector",
+    "TickThrottleMixin$SwivelBearing",
+    "TickThrottleMixin$PhysicsAssembler",
+    "TickThrottleMixin$ThrottleLever",
+    "TickThrottleMixin$MergingGlue"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
