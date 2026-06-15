@@ -30,7 +30,6 @@ public class SableBridgeLoader {
                     SableBridge.logNativeLoad(var0, var3);
                     System.load(var2.toAbsolutePath().toString());
                     SableBridge.logNativeSuccess();
-                    SableBridge.logRendererInfo();
                     SableBridgeLogger.flush();
                 }
             } catch (IOException var7) {

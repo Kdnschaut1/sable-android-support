@@ -39,20 +39,6 @@ public class SableBridge {
         SableBridgeLogger.logSableWarn("Native load error: " + var0);
     }
 
-    public static void logRendererInfo() {
-        try {
-            Class var0 = Class.forName("org.lwjgl.opengl.GL11");
-            Method var1 = var0.getMethod("glGetString", int.class);
-            String var2 = (String)var1.invoke(null, 7938);
-            String var3 = (String)var1.invoke(null, 7937);
-            String var4 = (String)var1.invoke(null, 7936);
-            SableBridgeLogger.logRender("GL Vendor   : " + var4);
-            SableBridgeLogger.logRender("GL Renderer : " + var3);
-            SableBridgeLogger.logRender("GL Version  : " + var2);
-        } catch (Exception var5) {
-            SableBridgeLogger.logRenderWarn("Could not query GL renderer info: " + var5.getMessage());
-        }
-    }
 
     public static boolean isAndroid() {
         String var0 = System.getProperty("os.version", "").toLowerCase();
