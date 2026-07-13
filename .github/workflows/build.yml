@@ -26,12 +26,19 @@ jobs:
     - name: Make Gradle Executable
       run: chmod +x gradlew
 
+    - name: Extract Project Versions
+      id: get_versions
+      run: |
+        MOD_VER=$(grep 'mod_version' gradle.properties | cut -d'=' -f2 | xargs)
+        MC_VER=$(grep 'minecraft_version' gradle.properties | cut -d'=' -f2 | xargs)
+        echo "MOD_VERSION=$MOD_VER" >> $GITHUB_ENV
+        echo "MC_VERSION=$MC_VER" >> $GITHUB_ENV
+
     - name: Build with Gradle
       run: ./gradlew build
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: mod-jar
+        name: sablebridge-${{ env.MOD_VERSION }}-${{ env.MC_VERSION }}
         path: build/libs/*.jar
-        
