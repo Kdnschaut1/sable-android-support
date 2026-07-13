@@ -2,23 +2,30 @@ package org.kdnschaut.sablebridge.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Dynamic;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "dev.ryanhcode.sable.physics.impl.rapier.Rapier3D", remap = false)
 public class MixinRapier3D {
 
-    @Dynamic("Bypasses compiler verification to inject into loadLibrary at runtime")
-    private static void loadLibrary() {
+    @Dynamic("Execute dynamic runtime hook on hidden target method")
+    @Inject(method = "loadLibrary", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void onLoadLibrary(CallbackInfo ci) {
+        if (!org.kdnschaut.sablebridge.SableBridge.isAndroid()) {
+            return;
+        }
+
         try {
-            // 1. Emulate the standard path layout that the mod engine expects
             java.nio.file.Path dir = java.nio.file.Paths.get(".sable/natives");
             java.nio.file.Path tempFile = dir.resolve("sable_rapier_aarch64_linux.so");
             String targetPath = tempFile.toAbsolutePath().toString();
 
-            // 2. Safely route execution over to your outer bridge loader
             org.kdnschaut.sablebridge.SableBridgeLoader.load(targetPath);
+            ci.cancel();
 
         } catch (Throwable t) {
-            System.err.println("[SableBridge] Critical failure forcing intercept on JarJar engine module!");
+            System.err.println("[SableBridge] Critical failure forcing intercept on Android!");
             t.printStackTrace();
         }
     }

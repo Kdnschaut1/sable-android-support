@@ -11,8 +11,7 @@ public class SableBridgeLoader {
 
     public static void load(String var0) {
         if (!SableBridge.isAndroid()) {
-            SableBridgeLogger.logSable("PC environment - using original native: " + var0);
-            System.load(var0);
+            SableBridgeLogger.logSable("PC environment Detected! Skipping)");
         } else {
             SableBridgeLogger.logSable("Android environment - intercepting native load");
             SableBridgeLogger.logSable("Original path: " + var0);

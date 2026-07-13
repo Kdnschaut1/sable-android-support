@@ -7,7 +7,7 @@ forgedatadev
 --assetIndex
 17
 --assetsDir
-/home/kdnschaut/.gradle/caches/neoformruntime/assets
+C:\\Users\\ASUS\\.gradle\\caches\\neoformruntime\\assets
 --gameDir
 .
 --fml.fmlVersion
@@ -24,6 +24,6 @@ forgedatadev
 sablebridge
 --all
 --output
-/home/kdnschaut/IdeaProjects/SableBridge_re/src/generated/resources
+C:\\Users\\ASUS\\IdeaProjects\\sable-android-support\\src\\generated\\resources
 --existing
-/home/kdnschaut/IdeaProjects/SableBridge_re/src/main/resources
+C:\\Users\\ASUS\\IdeaProjects\\sable-android-support\\src\\main\\resources
