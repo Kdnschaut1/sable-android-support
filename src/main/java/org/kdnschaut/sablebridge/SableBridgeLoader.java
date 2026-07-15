@@ -1,41 +1,109 @@
 package org.kdnschaut.sablebridge;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.stream.Stream;
 
 public class SableBridgeLoader {
     private static final String ANDROID_NATIVE = "/natives/sablebridge/sable_rapier_aarch64_android.so";
+    public static boolean hasPrompted = false;
+    public static String originalPathFallback = null;
+
+    // Local directory paths
+    private static final Path SABLE_BRIDGE_DIR = Paths.get("SableBridge");
+    private static final Path ENGINE_DIR = SABLE_BRIDGE_DIR.resolve("Engine");
 
     public static void load(String var0) {
         if (!SableBridge.isAndroid()) {
-            SableBridgeLogger.logSable("PC environment Detected! Skipping)");
-        } else {
-            SableBridgeLogger.logSable("Android environment - intercepting native load");
-            SableBridgeLogger.logSable("Original path: " + var0);
+            SableBridgeLogger.logSable("PC environment Detected! Skipping Android interception.");
+            return;
+        }
 
-            try (InputStream var1 = SableBridgeLoader.class.getResourceAsStream(ANDROID_NATIVE)) {
-                if (var1 == null) {
-                    SableBridgeLogger.logSableWarn("Android native not found in JAR: " + ANDROID_NATIVE);
-                    SableBridgeLogger.logSableWarn("Falling back to original path");
-                    System.load(var0);
-                } else {
-                    Path var2 = Files.createTempFile("sable_rapier_android", ".so");
-                    var2.toFile().deleteOnExit();
-                    Files.copy(var1, var2, StandardCopyOption.REPLACE_EXISTING);
-                    long var3 = Files.size(var2) / 1024L;
-                    SableBridge.logNativeLoad(var0, var3);
-                    System.load(var2.toAbsolutePath().toString());
+        originalPathFallback = var0;
+
+        // Auto-create SableBridge/Engine directories if they are missing
+        try {
+            if (!Files.exists(ENGINE_DIR)) {
+                Files.createDirectories(ENGINE_DIR);
+                SableBridgeLogger.logSable("Created missing folder: " + ENGINE_DIR.toAbsolutePath());
+            }
+        } catch (IOException e) {
+            SableBridgeLogger.logSableWarn("Failed to auto-create directories: " + e.getMessage());
+        }
+
+        if (isExperimentalEnabled()) {
+            if (!hasPrompted) {
+                SableBridgeLogger.logSable("EXPERIMENTAL: Delaying native load until User UI Confirmation.");
+                return;
+            } else {
+                loadExperimentalEngine();
+            }
+        } else {
+            loadDefaultNative();
+        }
+    }
+
+    public static void loadExperimentalEngine() {
+        if (Files.exists(ENGINE_DIR) && Files.isDirectory(ENGINE_DIR)) {
+            try (Stream<Path> paths = Files.list(ENGINE_DIR)) {
+                // Find any regular file inside SableBridge/Engine/
+                Path targetFile = paths
+                        .filter(Files::isRegularFile)
+                        .findFirst()
+                        .orElse(null);
+
+                // Verify the file exists, is readable, and is not empty
+                if (targetFile != null && Files.isReadable(targetFile) && Files.size(targetFile) > 1024) {
+                    SableBridgeLogger.logSable("EXPERIMENTAL: Verified and loading custom file: " + targetFile);
+                    System.load(targetFile.toAbsolutePath().toString());
                     SableBridge.logNativeSuccess();
                     SableBridgeLogger.flush();
+                    return;
+                } else {
+                    SableBridgeLogger.logSableWarn("EXPERIMENTAL: No valid custom engine found in SableBridge/Engine/ folder.");
                 }
-            } catch (IOException var7) {
-                SableBridge.logNativeError(var7.getMessage());
-                SableBridgeLogger.flush();
-                throw new RuntimeException("[SableAndroid] Failed to load Android Rapier native", var7);
+            } catch (Throwable e) {
+                SableBridgeLogger.logSableWarn("EXPERIMENTAL: Error scanning Engine directory: " + e.getMessage());
             }
+        }
+
+        SableBridgeLogger.logSableWarn("EXPERIMENTAL: Fallback triggered to prevent crash.");
+        loadDefaultNative();
+    }
+
+    public static void loadDefaultNative() {
+        try (InputStream var1 = SableBridgeLoader.class.getResourceAsStream(ANDROID_NATIVE)) {
+            if (var1 == null) {
+                System.load(originalPathFallback);
+            } else {
+                Path var2 = Files.createTempFile("sable_rapier_android", ".so");
+                var2.toFile().deleteOnExit();
+                Files.copy(var1, var2, StandardCopyOption.REPLACE_EXISTING);
+                System.load(var2.toAbsolutePath().toString());
+                SableBridge.logNativeSuccess();
+                SableBridgeLogger.flush();
+            }
+        } catch (IOException var7) {
+            throw new RuntimeException("[SableAndroid] Failed to load Default Android Rapier native", var7);
+        }
+    }
+
+    public static boolean isExperimentalEnabled() {
+        if (!SableBridge.isAndroid()) return false;
+
+        Path expFile = SABLE_BRIDGE_DIR.resolve("SableBridgeExperimentals.txt");
+        if (!Files.exists(expFile)) return false;
+
+        try (BufferedReader reader = Files.newBufferedReader(expFile)) {
+            String line = reader.readLine();
+            return line != null && line.trim().equalsIgnoreCase("true");
+        } catch (IOException e) {
+            return false;
         }
     }
 }

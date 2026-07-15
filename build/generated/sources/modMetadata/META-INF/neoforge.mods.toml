@@ -3,7 +3,7 @@ loaderVersion = "[4,)" #mandatory
 license = "MIT"
 [[mods]] #mandatory
 modId = "sablebridge" #mandatory
-version = "2.1" #mandatory
+version = "2.1.1" #mandatory
 displayName = "SableBridge" #mandatory
 #updateJSONURL="https://change.me.example.invalid/updates.json" #optional
 authors = "Kdnschaut" #optional
