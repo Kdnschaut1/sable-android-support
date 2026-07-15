@@ -1,12 +1,12 @@
 {
   "required": true,
-  "package": "org.kdnschaut.sablebridge.mixin",
+  "package": "org.kdnschaut.sablebridge",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "MixinRapier3D"
+    "mixin.MixinRapier3D"
   ],
   "client": [
-    ".org.kdnschaut.sablebridge.Experimentals.MixinTitleScreen"
+    "Experimentals.MixinTitleScreen"
   ],
   "injectors": {
     "defaultRequire": 1
