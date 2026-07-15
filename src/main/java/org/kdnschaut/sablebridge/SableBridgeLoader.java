@@ -38,7 +38,24 @@ public class SableBridgeLoader {
 
         if (isExperimentalEnabled()) {
             if (!hasPrompted) {
-                SableBridgeLogger.logSable("EXPERIMENTAL: Delaying native load until User UI Confirmation.");
+                // IMPORTANT: previously this returned here without loading anything,
+                // relying entirely on MixinTitleScreen having already shown the user
+                // a confirmation prompt on a prior title screen visit. If that prompt
+                // never fires (e.g. the title screen init hook is skipped, or this
+                // load() call happens before the user ever reaches the title screen),
+                // NOTHING gets loaded here, and the game crashes later with an
+                // UnsatisfiedLinkError the first time a native method is invoked.
+                //
+                // We still prefer the prompted path (handled by MixinTitleScreen /
+                // ExperimentalPromptScreen when it does run), but we can no longer
+                // afford to leave zero natives loaded. Fall back to the default,
+                // known-good bundled native now, so the game never crashes even if
+                // the confirmation prompt is skipped or never shown.
+                SableBridgeLogger.logSableWarn(
+                        "EXPERIMENTAL: No user confirmation was received before this native was needed. "
+                                + "Falling back to the default native to avoid a crash. "
+                                + "Visit the title screen and accept the sideloading prompt to use the custom engine instead.");
+                loadDefaultNative();
                 return;
             } else {
                 loadExperimentalEngine();
