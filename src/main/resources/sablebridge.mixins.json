@@ -5,6 +5,9 @@
   "mixins": [
     "MixinRapier3D"
   ],
+  "client": [
+    "Experimentals.MixinTitleScreen"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
