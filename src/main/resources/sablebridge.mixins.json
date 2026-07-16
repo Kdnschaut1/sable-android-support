@@ -5,9 +5,6 @@
   "mixins": [
     "MixinRapier3D"
   ],
-  "client": [
-    "MixinTitleScreen"
-  ],
   "injectors": {
     "defaultRequire": 1
   }
