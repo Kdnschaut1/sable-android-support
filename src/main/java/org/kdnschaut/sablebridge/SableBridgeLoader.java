@@ -75,8 +75,20 @@ public class SableBridgeLoader {
                         .orElse(null);
 
                 if (targetFile != null && Files.isReadable(targetFile) && Files.size(targetFile) > 1024) {
-                    SableBridgeLogger.logSable("EXPERIMENTAL: Verified and loading custom file: " + targetFile);
-                    System.load(targetFile.toAbsolutePath().toString());
+                    SableBridgeLogger.logSable("EXPERIMENTAL: Verified custom file: " + targetFile);
+                    
+                    if (SableBridge.isAndroid()) {
+                        Path tempFile = Files.createTempFile("sable_custom_rapier", ".so");
+                        tempFile.toFile().deleteOnExit();
+                        Files.copy(targetFile, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                        
+                        System.load(tempFile.toAbsolutePath().toString());
+                    } else if (SableBridge.isIOS()) {
+                        System.load(targetFile.toAbsolutePath().toString());
+                    } else {
+                        System.load(targetFile.toAbsolutePath().toString());
+                    }
+                    
                     SableBridge.logNativeSuccess();
                     SableBridgeLogger.flush();
                     return;
@@ -84,7 +96,7 @@ public class SableBridgeLoader {
                     SableBridgeLogger.logSableWarn("EXPERIMENTAL: No valid custom engine found in SableBridge/Engine/ folder.");
                 }
             } catch (Throwable e) {
-                SableBridgeLogger.logSableWarn("EXPERIMENTAL: Error scanning Engine directory: " + e.getMessage());
+                SableBridgeLogger.logSableWarn("EXPERIMENTAL: Error loading experimental engine: " + e.getMessage());
             }
         }
 
