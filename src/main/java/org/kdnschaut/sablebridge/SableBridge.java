@@ -63,4 +63,29 @@ public class SableBridge {
             return false;
         }
     }
+    public static boolean isIOS(){
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        String osArch = System.getProperty("os.arch", "").toLowerCase();
+        boolean isMacBased = osName.contains("mac") || osName.contains("darwin");
+        if (!isMacBased) {
+            return false;
+        }
+        if (osArch.contains("arm") || osArch.contains("aarch")) {
+            String userHome = System.getProperty("user.home", "");
+            if (userHome.contains("/mobile/")) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public static boolean isMobileTablet(){
+        if (isAndroid()){
+            return true;
+        } else if (isIOS()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 }

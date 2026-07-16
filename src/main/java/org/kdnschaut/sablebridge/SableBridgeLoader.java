@@ -14,19 +14,17 @@ public class SableBridgeLoader {
     public static boolean hasPrompted = false;
     public static String originalPathFallback = null;
 
-    // Local directory paths
     private static final Path SABLE_BRIDGE_DIR = Paths.get("SableBridge");
     private static final Path ENGINE_DIR = SABLE_BRIDGE_DIR.resolve("Engine");
 
     public static void load(String var0) {
-        if (!SableBridge.isAndroid()) {
-            SableBridgeLogger.logSable("PC environment Detected! Skipping Android interception.");
+        if (!SableBridge.isMobileTablet()) {
+            SableBridgeLogger.logSable("PC environment Detected! Skipping mobile interception.");
             return;
         }
 
         originalPathFallback = var0;
 
-        // Auto-create SableBridge/Engine directories if they are missing
         try {
             if (!Files.exists(ENGINE_DIR)) {
                 Files.createDirectories(ENGINE_DIR);
@@ -36,28 +34,46 @@ public class SableBridgeLoader {
             SableBridgeLogger.logSableWarn("Failed to auto-create directories: " + e.getMessage());
         }
 
-        if (isExperimentalEnabled()) {
-            if (!hasPrompted) {
-                SableBridgeLogger.logSable("EXPERIMENTAL: Delaying native load until User UI Confirmation.");
-                return;
-            } else {
+        if (SableBridge.isIOS()) {
+            if (isExperimentalEnabled() && isCustomEnginePresent()) {
                 loadExperimentalEngine();
+            } else {
+                SableBridgeLogger.logSableWarn("iOS: Waiting for custom .dylib library. See SableBridge/Engine folder.");
             }
-        } else {
-            loadDefaultNative();
+            return;
+        }
+
+        if (SableBridge.isAndroid()) {
+            if (isExperimentalEnabled() && isCustomEnginePresent()) {
+                if (!hasPrompted) {
+                    SableBridgeLogger.logSable("EXPERIMENTAL: Delaying native load until User UI Confirmation.");
+                    return;
+                } else {
+                    loadExperimentalEngine();
+                }
+            } else {
+                loadDefaultNative();
+            }
+        }
+    }
+
+    public static boolean isCustomEnginePresent() {
+        if (!Files.exists(ENGINE_DIR) || !Files.isDirectory(ENGINE_DIR)) return false;
+        try (Stream<Path> paths = Files.list(ENGINE_DIR)) {
+            return paths.anyMatch(p -> Files.isRegularFile(p) && p.toFile().length() > 1024);
+        } catch (IOException e) {
+            return false;
         }
     }
 
     public static void loadExperimentalEngine() {
         if (Files.exists(ENGINE_DIR) && Files.isDirectory(ENGINE_DIR)) {
             try (Stream<Path> paths = Files.list(ENGINE_DIR)) {
-                // Find any regular file inside SableBridge/Engine/
                 Path targetFile = paths
                         .filter(Files::isRegularFile)
                         .findFirst()
                         .orElse(null);
 
-                // Verify the file exists, is readable, and is not empty
                 if (targetFile != null && Files.isReadable(targetFile) && Files.size(targetFile) > 1024) {
                     SableBridgeLogger.logSable("EXPERIMENTAL: Verified and loading custom file: " + targetFile);
                     System.load(targetFile.toAbsolutePath().toString());
@@ -73,13 +89,19 @@ public class SableBridgeLoader {
         }
 
         SableBridgeLogger.logSableWarn("EXPERIMENTAL: Fallback triggered to prevent crash.");
-        loadDefaultNative();
+        if (SableBridge.isAndroid()) {
+            loadDefaultNative();
+        }
     }
 
     public static void loadDefaultNative() {
         try (InputStream var1 = SableBridgeLoader.class.getResourceAsStream(ANDROID_NATIVE)) {
             if (var1 == null) {
-                System.load(originalPathFallback);
+                if (originalPathFallback != null) {
+                    System.load(originalPathFallback);
+                } else {
+                    SableBridgeLogger.logSableWarn("Failed to load native: Fallback path is null.");
+                }
             } else {
                 Path var2 = Files.createTempFile("sable_rapier_android", ".so");
                 var2.toFile().deleteOnExit();
@@ -94,7 +116,7 @@ public class SableBridgeLoader {
     }
 
     public static boolean isExperimentalEnabled() {
-        if (!SableBridge.isAndroid()) return false;
+        if (!SableBridge.isMobileTablet()) return false;
 
         Path expFile = SABLE_BRIDGE_DIR.resolve("SableBridgeExperimentals.txt");
         if (!Files.exists(expFile)) return false;
