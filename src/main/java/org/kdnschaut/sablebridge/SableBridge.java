@@ -5,8 +5,6 @@ import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
-
 @Mod("sablebridge")
 public class SableBridge {
     public static final String MOD_ID = "sable_android";
@@ -39,23 +37,15 @@ public class SableBridge {
         SableBridgeLogger.logSableWarn("Native load error: " + var0);
     }
 
-
     public static boolean isAndroid() {
         String var0 = System.getProperty("os.version", "").toLowerCase();
         String var1 = System.getProperty("java.vendor", "").toLowerCase();
         String var2 = System.getProperty("java.vm.name", "").toLowerCase();
-        if (var0.contains("android")) {
+        if (var0.contains("android") ||
+                var1.contains("android") ||
+                var2.contains("android")) {
             return true;
         }
-
-        if (var1.contains("android")) {
-            return true;
-        }
-
-        if (var2.contains("android")) {
-            return true;
-        }
-
         try {
             Class.forName("android.os.Build");
             return true;
@@ -63,7 +53,8 @@ public class SableBridge {
             return false;
         }
     }
-    public static boolean isIOS(){
+
+    public static boolean isIOS() {
         String osName = System.getProperty("os.name", "").toLowerCase();
         String osArch = System.getProperty("os.arch", "").toLowerCase();
         boolean isMacBased = osName.contains("mac") || osName.contains("darwin");
@@ -78,14 +69,43 @@ public class SableBridge {
         }
         return false;
     }
-    public static boolean isMobileTablet(){
-        if (isAndroid()){
-            return true;
+
+    public static boolean isDesktop() {
+        if (isAndroid()) {
+            return false;
         } else if (isIOS()) {
+            return false;
+        } else {
             return true;
         }
-        else {
-            return false;
+    }
+
+    public static String getarchitecture() {
+        String arch = System.getProperty("os.arch", "").toLowerCase();
+
+        switch (arch) {
+            case "arm":
+            case "arm32":
+            case "armeabi":
+            case "armeabi-v7a":
+                return "armeabi-v7a";
+
+            case "arm64":
+            case "aarch64":
+            case "arm64-v8a":
+                return "arm64-v8a";
+
+            case "x86":
+            case "i386":
+            case "i686":
+                return "x86";
+
+            case "x86_64":
+            case "amd64":
+                return "x86_64";
+
+            default:
+                return "unknown";
         }
     }
 }

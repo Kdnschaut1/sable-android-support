@@ -21,7 +21,7 @@ public class MainMenuPromptHandler {
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (event.getScreen() instanceof TitleScreen mainMenu) {
 
-            if (!SableBridge.isMobileTablet()) {
+            if (SableBridge.isDesktop()) {
                 hasprompted = true;
                 SableBridgeLoader.hasPrompted = true;
                 return;

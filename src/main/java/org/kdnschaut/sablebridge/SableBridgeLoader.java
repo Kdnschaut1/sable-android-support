@@ -1,5 +1,7 @@
 package org.kdnschaut.sablebridge;
 
+import org.kdnschaut.sablebridge.client.UnknownArchitecture;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +12,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 public class SableBridgeLoader {
-    private static final String ANDROID_NATIVE = "/natives/sablebridge/sable_rapier_aarch64_android.so";
+    private static final String ANDROID_NATIVEDIR = "/natives/sablebridge/";
+    private static final String ANDROID_NATIVE = ANDROID_NATIVEDIR + "SableRapier_Android_" + SableBridge.getarchitecture() + ".so";
     public static boolean hasPrompted = false;
     public static String originalPathFallback = null;
 
@@ -18,8 +21,8 @@ public class SableBridgeLoader {
     private static final Path ENGINE_DIR = SABLE_BRIDGE_DIR.resolve("Engine");
 
     public static void load(String var0) {
-        if (!SableBridge.isMobileTablet()) {
-            SableBridgeLogger.logSable("PC environment Detected! Skipping mobile interception.");
+        if (SableBridge.isDesktop()) {
+            SableBridgeLogger.logSable("Desktop Enviroment Detected! Patch is Canceled!");
             return;
         }
 
@@ -28,7 +31,7 @@ public class SableBridgeLoader {
         try {
             if (!Files.exists(ENGINE_DIR)) {
                 Files.createDirectories(ENGINE_DIR);
-                SableBridgeLogger.logSable("Created missing folder: " + ENGINE_DIR.toAbsolutePath());
+                SableBridgeLogger.logSable("Created Experimental Folder: " + ENGINE_DIR.toAbsolutePath());
             }
         } catch (IOException e) {
             SableBridgeLogger.logSableWarn("Failed to auto-create directories: " + e.getMessage());
@@ -95,6 +98,10 @@ public class SableBridgeLoader {
     }
 
     public static void loadDefaultNative() {
+        if (ANDROID_NATIVE.endsWith("_unknown.so")){
+            UnknownArchitecture.showUnknownArchitectureScreen();
+            return;
+        }
         try (InputStream var1 = SableBridgeLoader.class.getResourceAsStream(ANDROID_NATIVE)) {
             if (var1 == null) {
                 if (originalPathFallback != null) {
@@ -116,7 +123,7 @@ public class SableBridgeLoader {
     }
 
     public static boolean isExperimentalEnabled() {
-        if (!SableBridge.isMobileTablet()) return false;
+        if (SableBridge.isDesktop()) return false;
 
         Path expFile = SABLE_BRIDGE_DIR.resolve("SableBridgeExperimentals.txt");
         if (!Files.exists(expFile)) return false;
