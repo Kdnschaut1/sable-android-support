@@ -61,7 +61,7 @@ SableBridge uses NeoForge's coremod system to modify behavior at runtime:
 ## 📜 Licensing
 
 - This project contains **no code from Sable**
-- Native library is built from Rapier (Apache 2.0)
+- Native library is built from Rapier inside of Sable Repository (Rapier Native License Apache 2.0) https://github.com/ryanhcode/sable/tree/main/sable_rapier/src/main/rust
 - This addon is independent and requires Sable as a dependency
 
 ---
