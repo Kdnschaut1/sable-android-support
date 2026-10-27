@@ -1,44 +1,147 @@
 name: Build SableBridge
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout SableBridge
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Checkout Sable Rust Source
+        uses: actions/checkout@v4
+        with:
+          repository: ryanhcode/sable
+          ref: main
+          path: native-source
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
 
-    - name: Make Gradle Executable
-      run: chmod +x gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-    - name: Extract Project Versions
-      id: get_versions
-      run: |
-        MOD_VER=$(grep 'mod_version' gradle.properties | cut -d'=' -f2 | xargs)
-        MC_VER=$(grep 'minecraft_version' gradle.properties | cut -d'=' -f2 | xargs)
-        echo "MOD_VERSION=$MOD_VER" >> $GITHUB_ENV
-        echo "MC_VERSION=$MC_VER" >> $GITHUB_ENV
+      - name: Make Gradle Executable
+        run: chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew build
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: sablebridge-${{ env.MOD_VERSION }}-${{ env.MC_VERSION }}
-        path: build/libs/*.jar
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Setup Rust Nightly
+        run: |
+          rustup toolchain install nightly-2026-01-29 --profile minimal
+          rustup target add --toolchain nightly-2026-01-29 \
+            aarch64-linux-android \
+            armv7-linux-androideabi \
+            x86_64-linux-android \
+            i686-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Build Android Native Libraries
+        working-directory: native-source/sable_rapier/src/main/rust
+        run: |
+          cargo +nightly-2026-01-29 ndk \
+            -t arm64-v8a \
+            -t armeabi-v7a \
+            -t x86_64 \
+            -t x86 \
+            -o "$GITHUB_WORKSPACE/native-output" \
+            build --release --package sable_rapier
+
+      - name: Package Android Natives into Resources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEST="src/main/resources/natives/sablebridge"
+          mkdir -p "$DEST"
+
+          copy_native() {
+            ABI="$1"
+            FILENAME="$2"
+            SOURCE="native-output/$ABI/libsable_rapier.so"
+
+            if [[ ! -s "$SOURCE" ]]; then
+              echo "::error::Native library missing or empty: $SOURCE"
+              exit 1
+            fi
+
+            cp "$SOURCE" "$DEST/$FILENAME"
+            echo "Prepared $DEST/$FILENAME"
+          }
+
+          copy_native arm64-v8a SableRapier_Android_arm64-v8a.so
+          copy_native armeabi-v7a SableRapier_Android_armeabi-v7a.so
+          copy_native x86_64 SableRapier_Android_x86_64.so
+          copy_native x86 SableRapier_Android_x86.so
+
+          ls -lh "$DEST"
+
+      - name: Extract Project Versions
+        id: get_versions
+        shell: bash
+        run: |
+          MOD_VER=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | xargs)
+          MC_VER=$(grep '^minecraft_version=' gradle.properties | cut -d'=' -f2 | xargs)
+
+          echo "MOD_VERSION=$MOD_VER" >> "$GITHUB_ENV"
+          echo "MC_VERSION=$MC_VER" >> "$GITHUB_ENV"
+
+      - name: Build SableBridge with Gradle
+        run: ./gradlew build
+
+      - name: Verify JAR Contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          JARS=(build/libs/*.jar)
+
+          if (( ${#JARS[@]} == 0 )); then
+            echo "::error::No JAR files were produced."
+            exit 1
+          fi
+
+          EXPECTED=(
+            natives/sablebridge/SableRapier_Android_arm64-v8a.so
+            natives/sablebridge/SableRapier_Android_armeabi-v7a.so
+            natives/sablebridge/SableRapier_Android_x86_64.so
+            natives/sablebridge/SableRapier_Android_x86.so
+          )
+
+          for JAR in "${JARS[@]}"; do
+            echo "Checking $JAR"
+            CONTENTS=$(jar tf "$JAR")
+
+            for FILE in "${EXPECTED[@]}"; do
+              if ! grep -Fxq "$FILE" <<< "$CONTENTS"; then
+                echo "::error::Missing $FILE in $JAR"
+                exit 1
+              fi
+              echo "Verified: $FILE"
+            done
+          done
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sablebridge-${{ env.MOD_VERSION }}-${{ env.MC_VERSION }}
+          path: build/libs/*.jar
+          if-no-files-found: error
