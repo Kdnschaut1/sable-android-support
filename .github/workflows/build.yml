@@ -1,8 +1,15 @@
-
 name: Build SableBridge
+
+run-name: ${{ inputs.run_name || 'Build SableBridge' }}
 
 on:
   workflow_dispatch:
+    inputs:
+      run_name:
+        description: 'Custom name for this run'
+        required: false
+        default: 'Build SableBridge'
+        type: string
 
 permissions:
   contents: read
